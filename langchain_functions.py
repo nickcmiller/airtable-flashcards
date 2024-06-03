@@ -26,20 +26,9 @@ def groq_chain_with_chat_history(human_input, chat_history=[]):
         "input": human_input,
         "chat_history": chat_history
     })
-
-
         
 def groq_query_agent(human_input, memory):
     llm = ChatGroq(temperature=0.0, model="llama3-70b-8192")
-    print(f"Memory before: {memory.chat_memory}\n\n")
-
-    def read_memory(query: str) -> str:
-        return memory.chat_memory
-    memory_tool_obj = Tool(
-        name="Read Memory",
-        func=read_memory,
-        description="Reads the memory of the agent"
-    )
 
     # Define your tools
     def search_tool(query: str) -> str:
@@ -52,7 +41,7 @@ def groq_query_agent(human_input, memory):
         description="Tells you the color of a Maine Coon cat"
     )
 
-    tools = [search_tool_obj, memory_tool_obj]
+    tools = [search_tool_obj]
 
     # Define the prompt
     prompt = '''
@@ -62,6 +51,7 @@ def groq_query_agent(human_input, memory):
         Thought: you should always think about what to do
         Action: the action to take, it will usually be one of [{tool_names}] but not always
         Action Input: the input to the action
+        Observation: your memory is in {chat_history}
         Observation: the result of the action
         ... (this Thought/Action/Action Input/Observation can repeat N times)
         Thought: I now know the final answer
