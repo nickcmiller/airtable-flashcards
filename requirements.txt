@@ -1,6 +1,5 @@
+git+https://github.com/nickcmiller/genai_toolbox.git
 groq
-langchain-core 
-langchain-community
-langchain-groq
+openai
 pyairtable
 python-dotenv
