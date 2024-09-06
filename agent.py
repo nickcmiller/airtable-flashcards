@@ -3,10 +3,13 @@ import requests
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
+from typing import List, Dict, Optional
 
 load_dotenv()
 
-def get_weather_data(city: str):
+def get_weather_data(
+    city: str
+) -> Optional[dict]:
     api_key = os.getenv("WEATHERAPI_KEY")
     url = f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={city}"
     response = requests.get(url)
@@ -15,7 +18,9 @@ def get_weather_data(city: str):
     else:
         return None
 
-def recognize_weather_request(user_input):
+def recognize_weather_request(
+    user_input
+) -> dict:
     prompt = f"""
     Analyze the following message and determine if the intent is to get weather information. If so, extract the location and date if mentioned.
 
@@ -40,47 +45,26 @@ def recognize_weather_request(user_input):
     
     return json.loads(response.choices[0].message.content)
 
-def react_agent(user_input):
+def react_agent(
+    user_input: str
+) -> str:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
     conversation = [
-        {"role": "system", "content": "You are a ReACT agent designed to help users get weather information. You can think, act, and observe. Use the tools provided to accomplish the task."},
+        {"role": "system", "content": (
+            "You are a ReACT agent designed to help users get weather information. "
+            "You can think, act, and observe. Use the tools provided to accomplish the task."
+        )},
         {"role": "user", "content": user_input}
     ]
     
     while True:
         response = client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
+            model="gpt-4o-mini",
             messages=conversation,
             tools=[
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "recognize_weather_request",
-                        "description": "Analyze user input to determine if it's a weather request and extract location and date",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "user_input": {"type": "string"}
-                            },
-                            "required": ["user_input"]
-                        }
-                    }
-                },
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "get_weather_data",
-                        "description": "Get weather data for a specific city",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "city": {"type": "string"}
-                            },
-                            "required": ["city"]
-                        }
-                    }
-                }
+                _recognize_weather_request_tool(),
+                _get_weather_data_tool()
             ],
             tool_choice="auto"
         )
@@ -90,17 +74,61 @@ def react_agent(user_input):
         
         if assistant_message.tool_calls:
             for tool_call in assistant_message.tool_calls:
-                function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
-                
-                if function_name == "recognize_weather_request":
-                    result = recognize_weather_request(function_args["user_input"])
-                elif function_name == "get_weather_data":
-                    result = get_weather_data(function_args["city"])
-                
-                conversation.append({"role": "tool", "tool_call_id": tool_call.id, "name": function_name, "content": json.dumps(result)})
+                result = _call_tool(tool_call, conversation)
+                conversation.append(
+                    {
+                        "role": "tool", 
+                        "tool_call_id": tool_call.id, 
+                        "name": tool_call.function.name, 
+                        "content": json.dumps(result)
+                    }
+                )
         else:
             return assistant_message.content
+
+def _recognize_weather_request_tool():
+    return {
+        "type": "function",
+        "function": {
+            "name": "recognize_weather_request",
+            "description": "Analyze user input to determine if it's a weather request and extract location and date",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "user_input": {"type": "string"}
+                },
+                "required": ["user_input"]
+            }
+        }
+    }
+
+def _get_weather_data_tool():
+    return {
+        "type": "function",
+        "function": {
+            "name": "get_weather_data",
+            "description": "Get weather data for a specific city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string"}
+                },
+                "required": ["city"]
+            }
+        }
+    }
+
+def _call_tool(
+    tool_call: dict, 
+    conversation: list
+) -> dict:
+    function_name = tool_call.function.name
+    function_args = json.loads(tool_call.function.arguments)
+    
+    if function_name == "recognize_weather_request":
+        return recognize_weather_request(function_args["user_input"])
+    elif function_name == "get_weather_data":
+        return get_weather_data(function_args["city"])
 
 if __name__ == "__main__":
     user_input = input("Enter a message: ")
