@@ -3,3 +3,4 @@ groq
 openai
 pyairtable
 python-dotenv
+requests
