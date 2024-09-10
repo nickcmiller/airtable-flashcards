@@ -8,7 +8,11 @@ from agent_functions import *
 
 load_dotenv()
 
-def recognize_weather_request_tool():
+import os
+import requests
+import json
+
+def get_weather_tool():
     def _recognize_weather_request(
         user_input: str
     ) -> dict:
@@ -34,22 +38,6 @@ def recognize_weather_request_tool():
         
         return json.loads(response.content)
 
-    return {
-        "type": "function",
-        "function": {
-            "name": "recognize_weather_request",
-            "description": "Analyze user input to determine if it's a weather request and extract location and date",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "user_input": {"type": "string"}
-                },
-                "required": ["user_input"]
-            }
-        }
-    }, _recognize_weather_request
-
-def get_weather_data_tool():
     def _get_weather_data(
         city: str
     ) -> Optional[dict]:
@@ -61,31 +49,41 @@ def get_weather_data_tool():
         else:
             return None
 
+    def _get_weather(
+        user_input: str
+    ) -> Optional[dict]:
+        weather_request = _recognize_weather_request(user_input)
+        if weather_request["intent"] == "get_weather":
+            city = weather_request["location"]
+            return _get_weather_data(city)
+        else:
+            return None
+
     return {
         "type": "function",
         "function": {
-            "name": "get_weather_data",
-            "description": "Get weather data for a specific city",
+            "name": "get_weather",
+            "description": "Get weather data for a specific location",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "city": {"type": "string"}
+                    "user_input": {"type": "string", "description": "The user's input message"}
                 },
-                "required": ["city"]
+                "required": ["user_input"]
             }
         }
-    }, _get_weather_data
+    }, _get_weather
 
 
 if __name__ == "__main__":
     user_input = input("Enter a message: ")
     tools = {
-        "recognize_weather_request": recognize_weather_request_tool(),
-        "get_weather_data": get_weather_data_tool()
+        "get_weather": get_weather_tool()
     }
     result = react_agent(
         user_input=user_input,
         tools=tools
+
     )
     
     print(result)

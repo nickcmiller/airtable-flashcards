@@ -77,24 +77,29 @@ def format_message(
 
 def react_agent(
     user_input: str,
-    tools: List[Dict[str, Callable]]
+    tools: List[Dict[str, Callable]],
+    tool_choice: Optional[str] = "auto",
+    system_instructions: Optional[str] = None
 ) -> str:
     conversation = [
         {
             "role": "system", 
             "content": (
-                "You are a ReACT agent designed to help users get weather information. "
+                "You are a ReACT agent designed to help users. "
                 "You can think, act, and observe. Use the tools provided to accomplish the task."
             )
         }
     ]
+
+    if system_instructions:
+        conversation[0]["content"] += f"\n{system_instructions}"
     
     while True:
         assistant_message = chat_with_openai_model(
             prompt=user_input,
             messages=conversation,
             tools=[tool_info for tool_info, _ in tools.values()],
-            tool_choice="auto"
+            tool_choice=tool_choice
         )
         formatted_message = format_message(assistant_message)
         conversation.append(formatted_message)
