@@ -1,0 +1,474 @@
+pyAirtable documentation pyAirtable¶ Python Client for the Airtable Api Docs GitHub Latest Release: 1.4.0 Getting Started¶ Installation¶ $ pip install pyairtable Warning Looking for airtable-python-wrapper?
+Check out 0.x Migration.
+Api Key¶ Your Airtable API key should be securely stored.
+A common way to do this, is to store it as an environment variable, and load it using os.environ: import os api_key = os.environ["AIRTABLE_API_KEY"] Quickstart¶ The easiest way to use this client is to use the Table class to fetch or update your records: >>> import os >>> from pyairtable import Table >>> api_key = os.environ['AIRTABLE_API_KEY'] >>> table = Table(api_key, 'base_id', 'table_name') >>> table.all() [ {"id": "rec5eR7IzKSAOBHCz", "fields": { ...
+}}] >>> table.create({"Foo": "Bar"}) {"id": "recwAcQdqwe21as", "fields": { "Foo": "Bar" }}] >>> table.update("recwAcQdqwe21as", {"Foo": "Foo"}) {"id": "recwAcQdqwe21as", "fields": { "Foo": "Foo" }}] >>> table.delete("recwAcQdqwe21as") True For more details on the available classes and methods check out the Airtable Api section.
+Airtable Api¶ Overview¶ This client offers three classes you can use to access the Airtable Api: Table - represents an Airtable Table Base - represents an Airtable Base Api - represents an Airtable Api The interfaces of these are nearly identical, the main difference is if base_id and table_id are provided on initialization or on calls.
+For example, the three all() calls below would return the same result: from pyairtable import Api, Base, Table api = Api('apikey') api.all('base_id', 'table_name') base = Base('apikey', 'base_id') base.all('table_name') table = Table('apikey', 'base_id', 'table_name') table.all() Interface¶ The table below shows a comparison of the methods used in the library compared with the official API equivalent.
+pyAirtable Api¶ Type pyAirtable Airtable Api Retrieve a single Record get() GET baseId/recordId Iterate over record pages iterate() GET baseId/ Get all records all() GET baseId/ Get all matches all(formula=match(...) GET baseId/?filterByFormula=...
+Get first match first(formula=match(...) GET baseId/?filterByFormula=...&maxRecords=1 Create record create() POST baseId/ Update a record update() PATCH baseId/ Replace a record update(replace=True) PUT base/ Delete a record delete() DELETE baseId/ Examples¶ Examples below use the Table Api for conciseness - all methods are available for all three interfaces (Api, Base, and Table).
+Fetching Records¶ iterate() Iterate over a set of records of size page_size, up until max_records or end of table, whichever is shorter.
+>>> for records in table.iterate(page_size=100, max_records=1000): ...
+print(records) [{id:'rec123asa23', fields': {'Last Name': 'Alfred', "Age": 84}, ...}, ...
+] [{id:'rec123asa23', fields': {'Last Name': 'Jameson', "Age": 42}, ...}, ...
+] all() This method returns a single list with all records in a table.
+Note that under the hood it uses iterate() to fetch records so multiple requests might be made.
+>>> table.all(sort=["First Name", "-Age"]): [{id:'rec123asa23', fields': {'Last Name': 'Alfred', "Age": 84}, ...}, ...
+] Creating Records¶ create() Creates a single record from a dictionary representing the table’s fields.
+>>> table.create({'First Name': 'John'}) {id:'rec123asa23', fields': {'First Name': 'John', ...}} batch_create() Batch create records from a list of dictionaries representing the table’s fields.
+>>> table.batch_create([{'First Name': 'John'}, ...]) [{id:'rec123asa23', fields': {'First Name': 'John', ...}}, ...] Updating Records¶ update() Updates a single record for the provided record_id using a dictionary representing the table’s fields.
+>>> table.update('recwPQIfs4wKPyc9D', {"Age": 21}) [{id:'recwPQIfs4wKPyc9D', fields': {"First Name": "John", "Age": 21, ...}}, ...] batch_update() Batch update records from a list of records.
+>>> table.batch_update([{"id": "recwPQIfs4wKPyc9D", "fields": {"First Name": "Matt"}}, ...]) [{id:'recwPQIfs4wKPyc9D', fields': {"First Name": "Matt", "Age": 21, ...}}, ...] Deleting Records¶ delete() Deletes a single record using the provided record_id.
+>>> table.delete('recwPQIfs4wKPyc9D') { "deleted": True, ...
+} batch_delete() Batch delete records using a list of record ids.
+>>> table.batch_delete(['recwPQIfs4wKPyc9D', 'recwAcQdqwe21as']) [ { "deleted": True, ...
+}, ...
+] Return Values¶ Return Values: when records are returned, will most often be alist of Airtable records (dictionary) in a format as shown below.
+>>> table.all() ...
+[{ ...
+"records": [ ...
+{ ...
+"id": "recwPQIfs4wKPyc9D", ...
+"fields": { ...
+"COLUMN_ID": "1", ...
+}, ...
+"createdTime": "2017-03-14T22:04:31.000Z" ...
+}, ...
+{ ...
+"id": "rechOLltN9SpPHq5o", ...
+"fields": { ...
+"COLUMN_ID": "2", ...
+}, ...
+"createdTime": "2017-03-20T15:21:50.000Z" ...
+}, ...
+{ ...
+"id": "rec5eR7IzKSAOBHCz", ...
+"fields": { ...
+"COLUMN_ID": "3", ...
+}, ...
+"createdTime": "2017-08-05T21:47:52.000Z" ...
+} ...
+], ...
+"offset": "rec5eR7IzKSAOBHCz" ...
+}, ...
+] The Base class is similar to Table, the main difference is that .
+table_name is not provided during initialization.
+Instead, it can be specified on each request.
+>>> base = Base('apikey', 'base_id') >>> base.all('Contacts) [{id:'rec123asa23', fields': {'Last Name': 'Alfred', "Age": 84}, ...
+] Classes¶ Api¶ New in version 1.0.0.
+class pyairtable.api.Api(api_key, *, timeout=None, retry_strategy=None)[source]¶ Represents an Airtable Api.
+The Api Key is provided on init and base_id and table_id can be provided on each method call.
+If you are only operating on one Table, or one Base, consider using Base or Table.
+Usage:>>> api = Api('apikey') >>> api.all('base_id', 'table_name') __init__(api_key, *, timeout=None, retry_strategy=None)[source]¶ Parameters api_key (str) – An Airtable API Key.
+Keyword Arguments timeout (Tuple) – A tuple indicating a connect and read timeout.
+eg.
+timeout=(2,5) would configure a 2 second timeout for the connection to be established and 5 seconds for a server read timeout.
+Default is None (no timeout).
+retry_strategy (Retry) – An instance of urllib3.util.Retry.
+pyairtable.retrying.retry_strategy() returns one with reasonable defaults, but you may provide your own custom instance of Retry.
+Default is None (no retry).
+all(base_id, table_name, **options)[source]¶ Retrieves all records repetitively and returns a single list.
+>>> api.all('base_id', 'table_name', view='MyView', fields=['ColA', '-ColB']) [{'fields': ...
+}, ...] >>> api.all('base_id', 'table_name', max_records=50) [{'fields': ...
+}, ...] Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+Keyword Arguments view – The name or ID of a view.
+If set, only the records in that view will be returned.
+The records will be sorted according to the order of the view.
+page_size – The number of records returned in each request.
+Must be less than or equal to 100.
+Default is 100.
+max_records – The maximum total number of records that will be returned.
+If this value is larger than page_size multiple requests will be needed to fetch all records.
+fields – Name of field or fields to be retrieved.
+Default is all fields.
+Only data for fields whose names are in this list will be included in the records.
+If you don’t need every field, you can use this parameter to reduce the amount of data transferred.
+sort – List of fields to sort by.
+Default order is ascending.
+This parameter specifies how the records will be ordered.
+If you set the view parameter, the returned records in that view will be sorted by these fields.
+If sorting by multiple columns, column names can be passed as a list.
+Sorting Direction is ascending by default, but can be reversed by prefixing the column name with a minus sign -.
+formula – An Airtable formula.
+The formula will be evaluated for each record, and if the result is not 0, false, “”, NaN, [], or #Error!
+the record will be included in the response.
+If combined with view, only records in that view which satisfy the formula will be returned.
+For example, to only include records where COLUMN_A isn’t empty, pass in: "NOT({COLUMN_A}='')".
+cell_format – The cell format to request from the Airtable API.
+Supported options are json (the default) and string.
+json will return cells as a JSON object.
+string will return the cell as a string.
+user_locale and time_zone must be set when using string.
+user_locale – The user locale that should be used to format dates when using string as the cell_format.
+See https://support.airtable.com/hc/en-us/articles/220340268-Supported-locale-modifiers-for-SET-LOCALE for valid values.
+time_zone – The time zone that should be used to format dates when using string as the cell_format.
+See https://support.airtable.com/hc/en-us/articles/216141558-Supported-timezones-for-SET-TIMEZONE for valid values.
+return_fields_by_field_id – An optional boolean value that lets you return field objects where the key is the field id.
+This defaults to false, which returns field objects where the key is the field name.
+Returns List of Records Return type records (list) >>> records = all(max_records=3, view='All') batch_create(base_id, table_name, records, typecast=False)[source]¶ Breaks records into chunks of 10 and inserts them in batches.
+Follows the set API rate.
+To change the rate limit you can change API_LIMIT = 0.2 (5 per second) >>> records = [{'Name': 'John'}, {'Name': 'Marc'}] >>> api.batch_insert('base_id', 'table_name', records) Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+records (List[dict]) – List of dictionaries representing records to be created.
+Keyword Arguments typecast – The Airtable API will perform best-effort automatic data conversion from string values.
+Default is False.
+Returns list of added records Return type records (list) batch_delete(base_id, table_name, record_ids)[source]¶ Breaks records into batches of 10 and deletes in batches, following set API Rate Limit (5/sec).
+To change the rate limit set value of API_LIMIT to the time in seconds it should sleep before calling the function again.
+>>> record_ids = ['recwPQIfs4wKPyc9D', 'recwDxIfs3wDPyc3F'] >>> api.batch_delete('base_id', 'table_name', records_ids) Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+record_ids (list) – Record Ids to delete Returns list of records deleted Return type records(list) batch_update(base_id, table_name, records, replace=False, typecast=False)[source]¶ Updates a records by their record id’s in batch.
+Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+records (list) – List of dict: [{“id”: record_id, “fields”: fields_to_update_dict}] Keyword Arguments replace (bool, optional) – If True, record is replaced in its entirety by provided fields - eg.
+if a field is not included its value will bet set to null.
+If False, only provided fields are updated.
+Default is False.
+typecast – The Airtable API will perform best-effort automatic data conversion from string values.
+Default is False.
+Returns list of updated records Return type records(list) create(base_id, table_name, fields, typecast=False)[source]¶ Creates a new record >>> record = {'Name': 'John'} >>> api.create('base_id', 'table_name', record) Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+fields (dict) – Fields to insert.
+Must be dictionary with Column names as Key.
+Keyword Arguments typecast – The Airtable API will perform best-effort automatic data conversion from string values.
+Default is False.
+Returns Inserted record Return type record (dict) delete(base_id, table_name, record_id)[source]¶ Deletes a record by its id >>> record = api.match('base_id', 'table_name', 'Employee Id', 'DD13332454') >>> api.delete('base_id', 'table_name', record['id']) Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+record_id (str) – An Airtable record id.
+Returns Deleted Record Return type record (dict) first(base_id, table_name, **options)[source]¶ Retrieves the first found record or None if no records are returned.
+This is similar to all(), except it it sets page_size and max_records to 1.
+Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+Keyword Arguments view – The name or ID of a view.
+If set, only the records in that view will be returned.
+The records will be sorted according to the order of the view.
+fields – Name of field or fields to be retrieved.
+Default is all fields.
+Only data for fields whose names are in this list will be included in the records.
+If you don’t need every field, you can use this parameter to reduce the amount of data transferred.
+sort – List of fields to sort by.
+Default order is ascending.
+This parameter specifies how the records will be ordered.
+If you set the view parameter, the returned records in that view will be sorted by these fields.
+If sorting by multiple columns, column names can be passed as a list.
+Sorting Direction is ascending by default, but can be reversed by prefixing the column name with a minus sign -.
+formula – An Airtable formula.
+The formula will be evaluated for each record, and if the result is not 0, false, “”, NaN, [], or #Error!
+the record will be included in the response.
+If combined with view, only records in that view which satisfy the formula will be returned.
+For example, to only include records where COLUMN_A isn’t empty, pass in: "NOT({COLUMN_A}='')".
+get(base_id, table_name, record_id, **options)[source]¶ Retrieves a record by its id >>> record = api.get('base_id', 'table_name', 'recwPQIfs4wKPyc9D') Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+record_id (str) – An Airtable record id.
+Keyword Arguments return_fields_by_field_id – An optional boolean value that lets you return field objects where the key is the field id.
+This defaults to false, which returns field objects where the key is the field name.
+Returns Record Return type record get_base(base_id)[source]¶ Returns a new Base instance using all shared attributes from Api Return type Base get_record_url(base_id, table_name, record_id)[source]¶ Returns a url for the provided record Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+get_table(base_id, table_name)[source]¶ Returns a new Table instance using all shared attributes from Api Return type Table iterate(base_id, table_name, **options)[source]¶ Record Retriever Iterator Returns iterator with lists in batches according to pageSize.
+To get all records at once use all() >>> for page in api.iterate('base_id', 'table_name'): ...
+for record in page: ...
+print(record) {"id": ...
+} ...
+Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+Keyword Arguments view – The name or ID of a view.
+If set, only the records in that view will be returned.
+The records will be sorted according to the order of the view.
+page_size – The number of records returned in each request.
+Must be less than or equal to 100.
+Default is 100.
+max_records – The maximum total number of records that will be returned.
+If this value is larger than page_size multiple requests will be needed to fetch all records.
+fields – Name of field or fields to be retrieved.
+Default is all fields.
+Only data for fields whose names are in this list will be included in the records.
+If you don’t need every field, you can use this parameter to reduce the amount of data transferred.
+sort – List of fields to sort by.
+Default order is ascending.
+This parameter specifies how the records will be ordered.
+If you set the view parameter, the returned records in that view will be sorted by these fields.
+If sorting by multiple columns, column names can be passed as a list.
+Sorting Direction is ascending by default, but can be reversed by prefixing the column name with a minus sign -.
+formula – An Airtable formula.
+The formula will be evaluated for each record, and if the result is not 0, false, “”, NaN, [], or #Error!
+the record will be included in the response.
+If combined with view, only records in that view which satisfy the formula will be returned.
+For example, to only include records where COLUMN_A isn’t empty, pass in: "NOT({COLUMN_A}='')".
+cell_format – The cell format to request from the Airtable API.
+Supported options are json (the default) and string.
+json will return cells as a JSON object.
+string will return the cell as a string.
+user_locale and time_zone must be set when using string.
+user_locale – The user locale that should be used to format dates when using string as the cell_format.
+See https://support.airtable.com/hc/en-us/articles/220340268-Supported-locale-modifiers-for-SET-LOCALE for valid values.
+time_zone – The time zone that should be used to format dates when using string as the cell_format.
+See https://support.airtable.com/hc/en-us/articles/216141558-Supported-timezones-for-SET-TIMEZONE for valid values.
+return_fields_by_field_id – An optional boolean value that lets you return field objects where the key is the field id.
+This defaults to false, which returns field objects where the key is the field name.
+Returns Record Iterator, grouped by page size Return type iterator update(base_id, table_name, record_id, fields, replace=False, typecast=False)[source]¶ Updates a record by its record id.
+Only Fields passed are updated, the rest are left as is.
+>>> table.update('recwPQIfs4wKPyc9D', {"Age": 21}) {id:'recwPQIfs4wKPyc9D', fields': {"First Name": "John", "Age": 21}} >>> table.update('recwPQIfs4wKPyc9D', {"Age": 21}, replace=True) {id:'recwPQIfs4wKPyc9D', fields': {"Age": 21}} Parameters base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+record_id (str) – An Airtable record id.
+fields (dict) – Fields to update.
+Must be dictionary with Column names as Key Keyword Arguments replace (bool, optional) – If True, record is replaced in its entirety by provided fields - eg.
+if a field is not included its value will bet set to null.
+If False, only provided fields are updated.
+Default is False.
+typecast – The Airtable API will perform best-effort automatic data conversion from string values.
+Default is False.
+Returns Updated record Return type record (dict) Base¶ New in version 1.0.0.
+class pyairtable.api.Base(api_key, base_id, *, timeout=None, retry_strategy=None)[source]¶ Represents an Airtable Base.
+This calss is similar to Api, except base_id is provided on init instead of provided on each method call.
+Usage:>>> base = Base('apikey', 'base_id') >>> base.all() __init__(api_key, base_id, *, timeout=None, retry_strategy=None)[source]¶ Parameters api_key (str) – An Airtable API Key.
+base_id (str) – An Airtable base id.
+Keyword Arguments timeout (Tuple) – A tuple indicating a connect and read timeout.
+eg.
+timeout=(2,5) would configure a 2 second timeout for the connection to be established and 5 seconds for a server read timeout.
+Default is None (no timeout).
+retry_strategy (Retry) – An instance of urllib3.util.Retry.
+pyairtable.retrying.retry_strategy() returns one with reasonable defaults, but you may provide your own custom instance of Retry.
+Default is None (no retry).
+all(table_name, **options)[source]¶ Same as Api.all but without base_id arg.
+batch_create(table_name, records, typecast=False)[source]¶ Same as Api.batch_create but without base_id arg.
+batch_delete(table_name, record_ids)[source]¶ Same as Api.batch_delete but without base_id arg.
+batch_update(table_name, records, replace=False, typecast=False)[source]¶ Same as Api.batch_update but without base_id arg.
+create(table_name, fields, typecast=False)[source]¶ Same as Api.create but without base_id arg.
+delete(table_name, record_id)[source]¶ Same as Api.delete but without base_id arg.
+first(table_name, **options)[source]¶ Same as Api.first but without base_id arg.
+get(table_name, record_id)[source]¶ Same as Api.get but without base_id arg.
+get_record_url(table_name, record_id)[source]¶ Same as Api.get_record_url but without base_id arg.
+get_table(table_name)[source]¶ Returns a new Table instance using all shared attributes from Base Return type Table iterate(table_name, **options)[source]¶ Same as Api.iterate but without base_id arg.
+update(table_name, record_id, fields, replace=False, typecast=False)[source]¶ Same as Api.update but without base_id arg.
+Table¶ New in version 1.0.0.
+class pyairtable.api.Table(api_key, base_id, table_name, *, timeout=None, retry_strategy=None)[source]¶ Represents an Airtable Table.
+This calss is similar to Api, except base_id and table_id are provided on init instead of provided on each method call.
+Usage:>>> table = Table('apikey', 'base_id', 'table_name') >>> table.all() __init__(api_key, base_id, table_name, *, timeout=None, retry_strategy=None)[source]¶ Parameters api_key (str) – An Airtable API Key.
+base_id (str) – An Airtable base id.
+table_name (str) – An Airtable table name.
+Table name should be unencoded, as shown on browser.
+Keyword Arguments timeout (Tuple) – A tuple indicating a connect and read timeout.
+eg.
+timeout=(2,5) would configure a 2 second timeout for the connection to be established and 5 seconds for a server read timeout.
+Default is None (no timeout).
+retry_strategy (Retry) – An instance of urllib3.util.Retry.
+pyairtable.retrying.retry_strategy() returns one with reasonable defaults, but you may provide your own custom instance of Retry.
+Default is None (no retry).
+all(**options)[source]¶ Same as Api.all but without base_id and table_name arg.
+batch_create(records, typecast=False, **options)[source]¶ Same as Api.batch_create but without base_id and table_name arg.
+batch_delete(record_ids)[source]¶ Same as Api.batch_delete but without base_id and table_name arg.
+batch_update(records, replace=False, typecast=False, **options)[source]¶ Same as Api.batch_update but without base_id and table_name arg.
+create(fields, typecast=False, **options)[source]¶ Same as Api.create but without base_id and table_name arg.
+delete(record_id)[source]¶ Same as Api.delete but without base_id and table_name arg.
+first(**options)[source]¶ Same as Api.first but without base_id and table_name arg.
+get(record_id, **options)[source]¶ Same as Api.get but without base_id and table_name arg.
+get_base()[source]¶ Returns a new Base instance using all shared attributes from Table Return type Base get_record_url(record_id)[source]¶ Same as Api.get_record_url but without base_id and table_name arg.
+iterate(**options)[source]¶ Same as Api.iterate but without base_id and table_name arg.
+property table_url¶ Returns the table URL update(record_id, fields, replace=False, typecast=False, **options)[source]¶ Same as Api.update but without base_id and table_name arg.
+Retrying¶ New in version 1.4.0.
+You may provide an instance of urllib3.util.Retry to configure retrying behaviour.
+The library also provides retry_strategy() to quickly generate a Retry instance with reasonable defaults that you can use as-is or with tweaks.
+Note for backwards-compatibility, the default behavior is no retry (retry_strategy=None).
+This may change in future releases.
+Default Retry Strategy from pyairtable import Api, retry_strategy api = Api('apikey', retry_strategy=retry_strategy()) Adjusted Default Strategy from pyairtable import Api, retry_strategy api = Api('apikey', retry_strategy=retry_strategy(total=3)) Custom Retry from pyairtable import Api, retry_strategy from urllib3.util import Retry myRetry = Retry(**kwargs) api = Api('apikey', retry_strategy=myRetry) pyairtable.api.retrying.retry_strategy(*, status_forcelist=(429, 500, 502, 503, 504), backoff_factor=0.3, total=5, **kwargs)[source]¶ Creates a Retry instance with optional default values.
+See urllib3 Retry docs for more details.
+New in version 1.4.0.
+Keyword Arguments status_forcelist (Tuple[int]) – list status code which should be retried.
+backoff_factor (float) – backoff factor.
+total (int) – max.
+number of retries.
+Note 0 means no retries, while``1`` will exececute a total of two requests (1 + 1 retry).
+**kwargs – All parameters supported by urllib3.util.Retry can be used.
+Return type Retry Parameters¶ Airtable offers a variety of options to control how you fetch data.
+Most options in the Airtable Api (eg.
+sort, fields, etc) have a corresponding kwargs that can be used with fetching methods like iterate().
+Parameter Airtable Option Notes max_records maxRecords The maximum total number of records that will be returned.
+If this value is larger than page_size multiple requests will be needed to fetch all records.
+sort sort List of fields to sort by.
+Default order is ascending.
+This parameter specifies how the records will be ordered.
+If you set the view parameter, the returned records in that view will be sorted by these fields.
+If sorting by multiple columns, column names can be passed as a list.
+Sorting Direction is ascending by default, but can be reversed by prefixing the column name with a minus sign -.
+view view The name or ID of a view.
+If set, only the records in that view will be returned.
+The records will be sorted according to the order of the view.
+page_size pageSize The number of records returned in each request.
+Must be less than or equal to 100.
+Default is 100.
+formula filterByFormula An Airtable formula.
+The formula will be evaluated for each record, and if the result is not 0, false, “”, NaN, [], or #Error!
+the record will be included in the response.
+If combined with view, only records in that view which satisfy the formula will be returned.
+For example, to only include records where COLUMN_A isn’t empty, pass in: "NOT({COLUMN_A}='')".
+fields fields Name of field or fields to be retrieved.
+Default is all fields.
+Only data for fields whose names are in this list will be included in the records.
+If you don’t need every field, you can use this parameter to reduce the amount of data transferred.
+cell_format cellFormat The cell format to request from the Airtable API.
+Supported options are json (the default) and string.
+json will return cells as a JSON object.
+string will return the cell as a string.
+user_locale and time_zone must be set when using string.
+user_locale userLocale The user locale that should be used to format dates when using string as the cell_format.
+See https://support.airtable.com/hc/en-us/articles/220340268-Supported-locale-modifiers-for-SET-LOCALE for valid values.
+time_zone timeZone The time zone that should be used to format dates when using string as the cell_format.
+See https://support.airtable.com/hc/en-us/articles/216141558-Supported-timezones-for-SET-TIMEZONE for valid values.
+return_fields_by_field_id New in version 1.3.0.
+returnFieldsByFieldId An optional boolean value that lets you return field objects where the key is the field id.
+This defaults to false, which returns field objects where the key is the field name.
+Formulas¶ New in version 1.0.0.
+The formula module provides funcionality to help you compose airtable formulas.
+For more information see Airtable Formula Reference Match¶ match() helps you build a formula to check for equality against a python dictionary: >>> from pyairtable import Table >>> from pyairtable.formulas import match >>> >>> table = Table("apikey", "base_id", "Contact") >>> formula = match({"First Name": "John", "Age": 21}) >>> table.first(formula=formula) {"id": "recUwKa6lbNSMsetH", "fields": {"First Name": "John", "Age": 21}} >>> formula "AND({First Name}='John',{Age}=21)" pyairtable.formulas.match(dict_values, *, match_any=False)[source]¶ Creates one or more EQUAL() expressions for each provided dict value.
+If more than one assetions is included, the expressions are groupped together into using AND() (all values must match).
+If match_any=True, expressions are grouped with OR(), record is return if any of the values match.
+This function also handles escaping field names and casting python values to the appropriate airtable types using to_airtable_value() on all provided values to help generate the expected formula syntax.
+If you need more advanced matching you can build similar expressions using lower level forumula primitives.
+Parameters dict_values – dictionary containing column names and values Keyword Arguments match_any – matches if any of the provided values match.
+Default is False (all values must match) Usage:>>> match({"First Name": "John", "Age": 21}) "AND({First Name}='John',{Age}=21)" >>> match({"First Name": "John", "Age": 21}, match_any=True) "AND({First Name}='John',{Age}=21)" >>> match({"First Name": "John"}) "{First Name}='John'" >>> match({"Registered": True}) "{Registered}=1" >>> match({"Owner's Name": "Mike"}) "{Owner\'s Name}='Mike'" Formula Helpers¶ pyairtable.formulas.to_airtable_value(value)[source]¶ Cast value to appropriate airtable types and format.
+For example, to check bool values in formulas, you actually to compare to 0 and 1.
+Input Output bool int str str; text is wrapped in ‘single quotes’; existing quotes are escaped.
+all others unchanged Arg:value: value to be cast.
+pyairtable.formulas.escape_quotes(value)[source]¶ Ensures any quotes are escaped.
+Already escaped quotes are ignored.
+Parameters value (str) – text to be escaped Usage:>>> escape_quotes("Player's Name") Player\'s Name >>> escape_quotes("Player\'s Name") Player\'s Name Raw Formulas¶ New in version 1.0.0.
+This module also includes many lower level functions you can use if you want to compose formulas: pyairtable.formulas.EQUAL(left, right)[source]¶ Creates an equality assertion >>> EQUAL(2,2) '2=2' Return type str pyairtable.formulas.FIELD(name)[source]¶ Creates a reference to a field.
+Quotes are escaped.
+Parameters name (str) – field name Usage:>>> FIELD("First Name") '{First Name}' >>> FIELD("Guest's Name") '{Guest\' Names}' Return type str pyairtable.formulas.AND(*args)[source]¶ Creates an AND Statement >>> AND(1, 2, 3) 'AND(1, 2, 3)' Return type str pyairtable.formulas.OR(*args)[source]¶ New in version 1.2.0.
+Creates an OR Statement >>> OR(1, 2, 3) 'OR(1, 2, 3)' Return type str pyairtable.formulas.FIND(what, where, start_position=0)[source]¶ Creates an FIND statement >>> FIND(STR(2021), FIELD('DatetimeCol')) 'FIND('2021', {DatetimeCol})' Parameters what (str) – String to search for where (str) – Where to search.
+Could be a string, or a field reference.
+start_position – Index of where to start search.
+Default is 0.
+Return type str pyairtable.formulas.IF(logical, value1, value2)[source]¶ Creates an IF statement >>> IF(1=1, 0, 1) 'IF(1=1, 0, 1)' Return type str pyairtable.formulas.STR_VALUE(value)[source]¶ Wraps string in quotes.
+This is needed when referencing a string inside a formula.
+Quotes are escaped.
+>>> STR_VALUE("John") "'John'" >>> STR_VALUE("Guest's Name") "'Guest\'s Name'" >>> EQUAL(STR_VALUE("John"), FIELD("First Name")) "'John'={First Name}" Return type str pyairtable.formulas.LOWER(value)[source]¶ New in version 1.3.0.
+Creates the LOWER function, making a string lowercase.
+Can be used on a string or a field name and will lower all the strings in the field.
+>>> LOWER("TestValue") "LOWER(TestValue)" Return type str Utilities¶ New in version 1.0.0.
+pyairtable.utils.attachment(url, filename='')[source]¶ Returns a dictionary using the expected dicitonary format for attachments.
+When creating an attachment, url is required, and filename is optional.
+Airtable will download the file at the given url and keep its own copy of it.
+All other attachment object properties will be generated server-side soon afterward.
+Note Attachment field values muest be an array of objects.
+Usage:>>> table = Table(...) >>> profile_url = "https://myprofile.com/id/profile.jpg >>> rec = table.create({"Profile Photo": [attachment(profile_url)]}) { 'id': 'recZXOZ5gT9vVGHfL', 'fields': { 'attachment': [ { 'id': 'attu6kbaST3wUuNTA', 'url': 'https://aws1.discourse-cdn.com/airtable/original/2X/4/411e4fac00df06a5e316a0585a831549e11d0705.png', 'filename': '411e4fac00df06a5e316a0585a831549e11d0705.png' } ] }, 'createdTime': '2021-08-21T22:28:36.000Z' } Return type dict pyairtable.utils.date_from_iso_str(value)[source]¶ Converts ISO 8601 date string into a date object.
+Expected format is “2014-09-05” Parameters value (str) – date string e.g.
+“2014-09-05” Return type date pyairtable.utils.date_to_iso_str(value)[source]¶ Converts date or datetime object into Airtable compatible ISO 8601 string e.g.
+“2014-09-05” Parameters value (Union[date, datetime]) – date or datetime object Return type str pyairtable.utils.datetime_from_iso_str(value)[source]¶ Converts ISO 8601 datetime string into a datetime object.
+Expected format is “2014-09-05T07:00:00.000Z” Parameters value (str) – datetime string e.g.
+“2014-09-05T07:00:00.000Z” Return type datetime pyairtable.utils.datetime_to_iso_str(value)[source]¶ Converts datetime object into Airtable compatible ISO 8601 string e.g.
+“2014-09-05T12:34:56.000Z” Parameters value (datetime) – datetime object Return type str Experimental¶ ORM¶ New in version 1.0.0.
+Warning This feature is experimental.
+Feel free to submit suggestions or feedback in our Github repo Model¶ The Model class allows you create an orm-style class for your Airtable tables.
+>>> from pyairtable.orm import Model, fields >>> class Contact(Model): ...
+first_name = fields.TextField("First Name") ...
+last_name = fields.TextField("Last Name") ...
+email = fields.EmailField("Email") ...
+is_registered = fields.CheckboxField("Registered") ...
+company = fields.LinkField("Company", Company, lazy=False) ...
+...
+class Meta: ...
+base_id = "appaPqizdsNHDvlEm" ...
+table_name = "Contact" ...
+api_key = "keyapikey" Once you have a class, you can create new objects to represent your Airtable records.
+Call save() to create a new record.
+>>> contact = Contact( ...
+first_name="Mike", ...
+last_name="McDonalds", ...
+email="mike@mcd.com", ...
+is_registered=False ...
+) ...
+>>> assert contact.id is None >>> contact.exists() False >>> assert contact.save() >>> contact.exists() True >>> contact.id rec123asa23 You can read and modify attributes.
+If record already exists, save() will update the record: >>> assert contact.is_registered is False >>> contact.save() >>> assert contact.is_registered is True >>> contact.to_record() { "id": recS6qSLw0OCA6Xul", "createdTime": "2021-07-14T06:42:37.000Z", "fields": { "First Name": "Mike", "Last Name": "McDonalds", "Email": "mike@mcd.com", "Resgistered": True } } Finally, you can use delete() to delete the record: >>> contact.delete() True class pyairtable.orm.model.Model(**fields)[source]¶ This class allows you create an orm-style class for your Airtable tables.
+This is a meta class and can only be used to define sub-classes.
+The Meta is reuired and must specify all three attributes: base_id, table_id, and api_key.
+>>> from pyairtable.orm import Model, fields >>> class Contact(Model): ...
+first_name = fields.TextField("First Name") ...
+age = fields.IntegerField("Age") ...
+...
+class Meta: ...
+base_id = "appaPqizdsNHDvlEm" ...
+table_name = "Contact" ...
+api_key = "keyapikey" ...
+timeout: Optional[Tuple[int, int]] = (5, 5) ...
+typecast: bool = True classmethod all(**kwargs)[source]¶ Returns all records for this model.
+See all() Return type List[~T] created_time: str = ''¶ delete()[source]¶ Deleted record.
+Must have ‘id’ field Return type bool exists()[source]¶ Returns boolean indicating if instance exists (has ‘id’ attribute) Return type bool fetch()[source]¶ Fetches field and resets instance field values from the Airtable record classmethod first(**kwargs)[source]¶ Returns first record for this model.
+See first() Return type List[~T] classmethod from_id(record_id, fetch=True)[source]¶ Create an instance from a record_id Parameters record_id (str) – An Airtable record id.
+Keyward Args: fetch: If True, record will be fetched and fields will beupdated.
+If False, a new instance is created with the provided id, but field values are unset.
+Default is True.
+Returns Instance of model Return type (Model) classmethod from_record(record)[source]¶ Create instance from record dictionary Return type ~T classmethod get_table()[source]¶ Return Airtable Table class instance Return type Table id: str = ''¶ save()[source]¶ Saves or updates a model.
+If instance has no ‘id’, it will be created, otherwise updatedself.
+Returns True if was created and False if it was updated Return type bool to_record()[source]¶ Returns a dictionary object as an Airtable record.
+This method converts internal field values into values expected by Airtable.
+e.g.
+a datetime value from :class:DateTimeField is converted into an ISO 8601 string Return type dict Fields¶ Field are used to define the Airtable column type for your pyAirtable models.
+Internally these are implemented as descriptors, this allows us to proxy getting and settings values, while also providing a type-annotated interface.
+>>> from pyairtable.orm import Model, fields >>> class Contact(Model): ...
+name = fields.TextField("Name") ...
+is_registered = fields.CheckboxField("Registered") ...
+...
+class Meta: ...
+...
+>>> contact = Contact(name="George", is_registered=True) >>> assert contact.name == "George" >>> reveal_type(contact.name) # -> str >>> contact.to_record() { "id": recS6qSLw0OCA6Xul", "createdTime": "2021-07-14T06:42:37.000Z", "fields": { "Name": "George", "Registered": True, } } Link Fields¶ In addition to standard data type fields, the LinkField class offers a special behaviour that can fetch linked records.
+In other words, you can transverse related records through their Link Fields: >>> from pyairtable.orm import Model, fields >>> class Company(Model): ...
+name = fields.TextField("Name") ...
+class Meta: ...
+...
+...
+>>> class Person(Model): ...
+company = fields.LinkField("Company", Company, lazy=False) ...
+class Meta: ...
+...
+...
+>>> contact.from_id("recS6qSLw0OCA6Xul") >>> contact.company.name # outputs value of Company.name attribute class pyairtable.orm.fields.CheckboxField(field_name, validate_type=True)[source]¶ Airtable Checkbox field.
+Uses bool to store value class pyairtable.orm.fields.DateField(field_name, validate_type=True)[source]¶ Airtable Date field.
+Uses Date to store value to_internal_value(value)[source]¶ Airtable returns ISO 8601 date string eg.
+“2014-09-05 Return type date to_record_value(value)[source]¶ Airtable expects ISO 8601 date string eg.
+“2014-09-05 Return type str class pyairtable.orm.fields.DatetimeField(field_name, validate_type=True)[source]¶ Airtable Datetime field.
+Uses datetime to store value to_internal_value(value)[source]¶ Airtable returns ISO 8601 string datetime eg.
+“2014-09-05T07:00:00.000Z” Return type datetime to_record_value(value)[source]¶ Airtable expects ISO 8601 string datetime eg.
+“2014-09-05T12:34:56.000Z” Return type str class pyairtable.orm.fields.EmailField(field_name, validate_type=True)[source]¶ Airtable Email field.
+Uses str to store value class pyairtable.orm.fields.FloatField(field_name, validate_type=True)[source]¶ Airtable Number field with Decimal precision.
+Uses float to store value class pyairtable.orm.fields.IntegerField(field_name, validate_type=True)[source]¶ Airtable Number field with Integer Precision.
+Uses int to store value class pyairtable.orm.fields.LinkField(field_name, model, lazy=True)[source]¶ Airtable Link field.
+Uses List[Model] to store value __init__(field_name, model, lazy=True)[source]¶ Parameters field_name (str) – Name of Airtable Column model (Union[str, Type[~T_Linked]]) – Model of Linked Type.
+Must be subtype of Model lazy – Use True to load linked model when looking up attribute.
+False will create empty object with only id but will not fetch fields.
+Usage:>>> TODO class pyairtable.orm.fields.TextField(field_name, validate_type=True)[source]¶ Airtable Single Text or Multiline Text Fields.
+Uses str to store value Metadata Api¶ New in version 1.0.0.
+The metadata api gives you the ability to list all of your bases, tables, fields, and views.
+Warning This api is experimental Warning If you want to develop an integration using the Metadata API, you must register here for access and to receive a client secret.
+Enterprise Airtable accounts do not require a separate Metadata API client secret.
+pyairtable.metadata.get_api_bases(api)[source]¶ Return list of Bases from an Api or Base instance.
+For More Details Metadata Api Documentation Parameters api (Union[Api, Base]) – Api or Base instance Usage:>>> table.get_bases() { "bases": [ { "id": "appY3WxIBCdKPDdIa", "name": "Apartment Hunting", "permissionLevel": "create" }, { "id": "appSW9R5uCNmRmfl6", "name": "Project Tracker", "permissionLevel": "edit" } ] } Return type dict pyairtable.metadata.get_base_schema(base)[source]¶ Returns Schema of a Base For More Details Metadata Api Documentation Parameters base (Union[Base, Table]) – Base or Table instance Usage:>>> get_base_schema(base) { "tables": [ { "id": "tbltp8DGLhqbUmjK1", "name": "Apartments", "primaryFieldId": "fld1VnoyuotSTyxW1", "fields": [ { "id": "fld1VnoyuotSTyxW1", "name": "Name", "type": "singleLineText" }, { "id": "fldoaIqdn5szURHpw", "name": "Pictures", "type": "multipleAttachment" }, { "id": "fldumZe00w09RYTW6", "name": "District", "type": "multipleRecordLinks" } ], "views": [ { "id": "viwQpsuEDqHFqegkp", "name": "Grid view", "type": "grid" } ] } ] } Return type dict pyairtable.metadata.get_table_schema(table)[source]¶ Returns the specific table schema record provided by base schema list Parameters table (Table) – Table instance Usage:>>> get_table_schema(table) { "id": "tbltp8DGLhqbUmjK1", "name": "Apartments", "primaryFieldId": "fld1VnoyuotSTyxW1", "fields": [ { "id": "fld1VnoyuotSTyxW1", "name": "Name", "type": "singleLineText" } ], "views": [ { "id": "viwQpsuEDqHFqegkp", "name": "Grid view", "type": "grid" } ] } Return type Optional[dict] 0.x Migration¶ Airtable Python Wrapper was renamed to pyAirtable starting on its first major release, 1.0.0.
+The docs for the older release will remain on Read the Docs, the source code on this branch.
+The last 0.x release will remain available on PYPI.
+You can read about the reasons behind the renaming here.
+New Features¶ Type Annotations Simpler Api Formulas ORM Models API Changes¶ We used this new major release to make a few breaking changes: Introduced a simpler api that’s more closely aligned with Airtable Api’s patterns.
+Created more a flexible API (Api, Base, Table) Changes¶ 0.x (airtable-python-wrapper) 1.0 (pyAirtable) Airtable() Api, Base, Table get() get() get_iter() iterate() get_all() all() search() all(formula=match({"Name" : "X"}) match(**kwargs) first(formula=match({"Name" : "X"}) insert() create() update() update() replace() use update(replace=True) delete() delete() About¶ Questions¶ Post them over in the project’s Github Page Contribute¶ git clone git@github.com:gtalarico/pyairtable.git cd pyairtable # Create Virtual Environment python3 -m venv .venv source .venv/bin/activate make setup # Sets up githooks and install package and depedencies make test # run test complete suite # Optional, use as needed make lint # lints locally - also done in pre-merge CI make docs # builds docs locally - see `docs/build/index.html` Release¶ make bump License¶ MIT License Changelog¶ Warning Looking for airtable-python-wrapper changelog?
+See 0.x Migration.
+1.4.0¶ Added Retrying () Misc fix in sleep for batch requests PR #180 <https://github.com/gtalarico/pyairtable/pull/180> 1.3.0¶ Added new LOWER formula - PR #171.
+See updated Formulas.
+Added match(..., match_any=True) to match() Added return_fields_by_field_id in get() 1.2.0¶ Release Date: 2022-07-09 Fixed missing rate limit in batch_update() - PR #162.
+Added support for new parameter return_fields_by_field_id - PR #161.
+See updated Parameters.
+Added new OR formula - PR #148.
+See updated Formulas.
+1.1.0¶ Release Date: 2022-02-21 Added support for cellFormat - PR #140.
+See updated Parameters.
+1.0.0¶ Release Date: 2021-08-11 pyAirtable rewrite for 1.x - see 0.x Migration.
+0.15.3¶ Release Date: 2021-07-26 © Copyright 2021, Gui Talarico — Revision 8aa18a71.
+Built with Sphinx using a theme provided by Revitron.
