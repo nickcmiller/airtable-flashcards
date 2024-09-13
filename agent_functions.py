@@ -121,12 +121,20 @@ def _process_tool_calls(
     if "tool_calls" in assistant_message:
         for tool_call in assistant_message["tool_calls"]:
             result = _call_tool(tool_call["function"], tools)
+            try:
+                if type(result) == str:
+                    content = result
+                else:
+                    content = json.dumps(result)
+            except Exception as e:
+                content = f"Error: {e}"
+
             conversation.append(
                 {
                     "role": "tool", 
                     "tool_call_id": tool_call["id"],
                     "name": tool_call["function"]["name"], 
-                    "content": json.dumps(result)
+                    "content": content
                 }
             )
         return None
