@@ -17,8 +17,8 @@ def get_airtable_tables_tool():
                 {
                     "id": table.get("id"), 
                     "name": table.get("name"),
-                    # "fields": table.get("fields"),
-                    # "primary_field_id": table.get("primary_field_id")
+                    "fields": table.get("fields"),
+                    "primary_field_id": table.get("primary_field_id")
                 }
                 for table in tables
             ]
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     base_id = os.environ.get("AIRTABLE_BASE_ID")
     # print(get_airtable_tables_tool()[1](base_id))
 
-    user_input = f"Find me the first 5 records with fields Question and Answerin the Linux table in my base with based_id = {base_id}"
+    user_input = f"Tell me the question and answer for all the records in the Linux table and when they were last modified. based_id: {base_id}"
     # user_input = f"Find me a question about sockets in the Linux table in my base with based_id = {base_id}. Give me its record ID"
     
     print(user_input)
