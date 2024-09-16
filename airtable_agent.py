@@ -17,8 +17,8 @@ def get_airtable_tables_tool():
                 {
                     "id": table.get("id"), 
                     "name": table.get("name"),
-                    "fields": table.get("fields"),
-                    "primary_field_id": table.get("primary_field_id")
+                    # "fields": table.get("fields"),
+                    # "primary_field_id": table.get("primary_field_id")
                 }
                 for table in tables
             ]
@@ -45,18 +45,18 @@ def get_airtable_tables_tool():
     }, _get_tables
 
 def get_airtable_records_tool():
-    def _get_records(base_id: str, table_id: str) -> str:
+    def _get_records(base_id: str, table_id: str, fields: list = None) -> str:
         try:
             records = get_records(base_id, table_id)
             filtered_records = []
-            filtered_records = [
-                {
-                    "id": record.get("id"), 
-                    "Question": record.get("fields", {}).get("Question"),
-                    "Answer": record.get("fields", {}).get("Answer")
-                }
-                for record in records
-            ]
+            for record in records:
+                record_data = {"id": record.get("id")}
+                if fields:
+                    for field in fields:
+                        record_data[field] = record.get("fields", {}).get(field)
+                else:
+                    record_data.update(record.get("fields", {}))
+                filtered_records.append(record_data)
             return filtered_records
         except Exception as e:
             return f"Error retrieving records: {str(e)}"
@@ -65,7 +65,7 @@ def get_airtable_records_tool():
         "type": "function",
         "function": {
             "name": "get_airtable_records",
-            "description": "Retrieves all records from a specified Airtable table",
+            "description": "Retrieves records from a specified Airtable table, optionally filtering fields",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -76,6 +76,13 @@ def get_airtable_records_tool():
                     "table_id": {
                         "type": "string",
                         "description": "The ID of the Airtable table"
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Optional list of field names to include in the output. If not provided, all fields will be returned."
                     }
                 },
                 "required": ["base_id", "table_id"]
@@ -87,13 +94,13 @@ if __name__ == "__main__":
     base_id = os.environ.get("AIRTABLE_BASE_ID")
     # print(get_airtable_tables_tool()[1](base_id))
 
-    user_input = f"Find me the Linux table in my base with based_id = {base_id}"
+    user_input = f"Find me the first 5 records with fields Question and Answerin the Linux table in my base with based_id = {base_id}"
     # user_input = f"Find me a question about sockets in the Linux table in my base with based_id = {base_id}. Give me its record ID"
     
     print(user_input)
     tools = {
         "get_airtable_tables": get_airtable_tables_tool(),
-        # "get_airtable_records": get_airtable_records_tool()
+        "get_airtable_records": get_airtable_records_tool()
     }
     result = react_agent(
         user_input=user_input,
