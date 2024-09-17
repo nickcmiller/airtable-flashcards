@@ -45,7 +45,11 @@ def get_airtable_tables_tool():
     }, _get_tables
 
 def get_airtable_records_tool():
-    def _get_records(base_id: str, table_id: str, fields: list = None) -> str:
+    def _get_records(
+        base_id: str,
+        table_id: str, 
+        fields: list = None
+    ) -> str:
         try:
             records = get_records(base_id, table_id)
             filtered_records = []
@@ -90,12 +94,30 @@ def get_airtable_records_tool():
         }
     }, _get_records
 
+
+
 if __name__ == "__main__":
     base_id = os.environ.get("AIRTABLE_BASE_ID")
     # print(get_airtable_tables_tool()[1](base_id))
 
-    user_input = f"Tell me the question and answer for all the records in the Linux table and when they were last modified. based_id: {base_id}"
-    # user_input = f"Find me a question about sockets in the Linux table in my base with based_id = {base_id}. Give me its record ID"
+    user_input = f"""
+    Find the Linux table. From that table, return records related to security, if any, to me as JSON list. Include Last Modified in the response.
+    Don't preface the response with anything, just return the JSON list.
+    ```
+    [
+        {{
+            "Question": "", 
+            "Answer": "", 
+        }},
+        {{
+            "Question": "", 
+            "Answer": "", 
+        }}
+    ]
+    ```
+    base_id: {base_id}
+    """
+    # user_input = f"Find me a question and answer for all the records in the Linux table and when they were last modified. based_id: {base_id}"
     
     print(user_input)
     tools = {
@@ -105,7 +127,7 @@ if __name__ == "__main__":
     result = react_agent(
         user_input=user_input,
         tools=tools,
-        system_instructions="You are an assistant that helps with Airtable-related tasks."
+        system_instructions="You are an assistant that helps with Airtable-related tasks. You may be asked to reflect on and modify the data you have retrieved from Airtable."
     )
     
     print(result)

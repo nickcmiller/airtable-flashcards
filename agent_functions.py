@@ -5,6 +5,10 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionMessage
 from typing import List, Dict, Optional, Callable, Tuple, Union
 
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 def chat_with_openai_model(
     prompt: Optional[str] = None,
     messages: Optional[List[Dict[str, str]]] = None,
@@ -95,23 +99,28 @@ def react_agent(
         conversation[0]["content"] += f"\n{system_instructions}"
     
     while True:
-        assistant_message = chat_with_openai_model(
-            prompt=user_input,
-            messages=conversation,
-            tools=[tool_info for tool_info, _ in tools.values()],
-            tool_choice=tool_choice
-        )
-        formatted_message = format_message(assistant_message)
-        conversation.append(formatted_message)
-        
-        result = _process_tool_calls(
-            formatted_message, 
-            conversation, 
-            tools
-        )
-        if result:
-            print(f"\n\nConversation: {json.dumps(conversation, indent=2)}\n\n")
-            return result
+        try:
+            assistant_message = chat_with_openai_model(
+                prompt=user_input,
+                messages=conversation,
+                tools=[tool_info for tool_info, _ in tools.values()],
+                tool_choice=tool_choice
+            )
+            formatted_message = format_message(assistant_message)
+            conversation.append(formatted_message)
+            
+            result = _process_tool_calls(
+                formatted_message, 
+                conversation, 
+                tools
+            )
+            if result:
+                logger.info(f"\n\nConversation: {json.dumps(conversation, indent=2)}\n\n")
+                return result
+        except Exception as e:
+            logger.error(f"\n\nConversation: {json.dumps(conversation, indent=2)}\n\n")
+            logger.error(f"Error occurred: {e}")
+            return None
 
 def _process_tool_calls(
     assistant_message: dict,
